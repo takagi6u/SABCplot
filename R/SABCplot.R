@@ -4,8 +4,9 @@
 # Creation date (dd.mm.yyyy): 30.01.2026
 #========================================================================
 
-
-
+#' @title S-ABCplot
+#' @description \code{SABCplot} The function SABCplot is the function that plots Figures 3 and 4.
+#' @importFrom ggplot2, dplyr
 #' @param effect_measure String indicating the label of the lower horizontal axis."difference in means", "risk difference", "log risk ratio", "log odds ratio", "log hazard ratio"
 #' @param BF_type String indicating the BF hypotheses setting of plot. "simple", "composite"
 #' @param estimate Numerical vector containing the estimate(s).
@@ -19,6 +20,55 @@
 #' @param upp_axes Numerical vector indicating upper limits of the bottom horizontal axis.
 #' @param length_axes Numerical vector indicating scaling of the bottom horizontal axis.
 
+#' @examples
+#'=========================================================================================
+#' Graphics in the paper Figure 3, 4
+#'=========================================================================================
+#'
+#'adjestimate <- 16.7
+#'adjlower <- 4.2
+#'adjupper <- 29.2
+#'N1 <- 95
+#'N2 <- 95
+#'adjdf <- N1+N2-4
+#'adjse <- (adjestimate - 4.2)/qt((1 - (1 - 0.95)/2), adjdf)
+#'estimate <- adjestimate
+#'se <- adjse
+#'--
+#'Figure3
+#'--
+#'SABCplot(effect_measure = "difference in means"
+#'         , BF_type = "composite"
+#'         , estimate = estimate
+#'         , stderr = se
+#'         , N1 = N1
+#'         , N2 = N2
+#'         , zte = 0
+#'         , ate = 58
+#'         , mte = 8
+#'         , conf_levels = c(0.95)
+#'         , low_axes = -10
+#'         , upp_axes = 70
+#'         , length_axes = 10)
+#'ggsave("ABCplot_mte8.jpeg", dpi = 300, width = 11, height = 9)
+#'--
+#'Figure4
+#'--
+#'SABCplot(effect_measure = "difference in means"
+#'         , BF_type = "composite"
+#'         , estimate = estimate
+#'         , stderr = se
+#'         , N1 = N1
+#'         , N2 = N2
+#'         , zte = 0
+#'         , ate = 58
+#'         , mte = 20
+#'         , conf_levels = c(0.95)
+#'         , low_axes = -10
+#'         , upp_axes = 70
+#'         , length_axes = 10)
+#' ggsave("ABCplot_mte20.jpeg", dpi = 300, width = 11, height = 9)
+#' @export
 SABCplot <- function(
   effect_measure = NULL
   , BF_type = NULL
@@ -55,11 +105,22 @@ SABCplot <- function(
 
   p_val_zte <- p_val(zte, estimate, stderr)
   p_val_ate <- p_val(ate, estimate, stderr)
-  p_val_mte <- p_val(mte, estimate, stderr)
 
   s_val_zte <- log(p_val_zte)/log(0.5)
   s_val_ate <- log(p_val_ate)/log(0.5)
-  s_val_mte <- log(p_val_mte)/log(0.5)
+
+  s_val_zte_cut <- ifelse(s_val_zte < 7, s_val_zte, 7)
+  s_val_ate_cut <- ifelse(s_val_ate < 7, s_val_ate, 7)
+
+  if (!is.null(mte)) {
+    p_val_mte <- p_val(mte, estimate, stderr)
+    s_val_mte <- log(p_val_mte)/log(0.5)
+    s_val_mte_cut <- ifelse(s_val_mte < 7, s_val_mte, 7)
+  } else {
+    p_val_mte <- NA
+    s_val_mte <- NA
+    s_val_mte_cut <- NA
+  }
 
   #---------------------------------------
   # All CI calculation and S-values
@@ -112,7 +173,7 @@ SABCplot <- function(
 
   find_estimate_at_v <- function(v, type, stderr, low_axes, upp_axes, ate=NULL, zte=NULL, mte=NULL) {
     target_func <- function(x) {
-      calc_log_BF(BF_type, estimate = x, stderr = stderr, ate = ate, zte = zte, mte = mte) - v
+      calc_log_BF(BF_type = type, estimate = x, stderr = stderr, ate = ate, zte = zte, mte = mte) - v
     }
 
     res <- tryCatch({
@@ -147,16 +208,16 @@ SABCplot <- function(
   V3 <- with(BF_list, est_list[8])
   V4 <- with(BF_list, est_list[9])
 
-
   #---------------------------------------
   # x axis Scaling
   #---------------------------------------
 
    xmin <- low_axes
    xmax <- upp_axes
-   V_min <- ifelse(ate > 0, low_axes, upp_axes)
-   V_max <- ifelse(ate > 0, upp_axes, low_axes)
-   V_max2 <- V_max - length_axes
+
+   ref_point <- if(!is.null(mte)) mte else if(!is.null(ate)) ate else 0
+   V_min <- ifelse(ref_point > 0, low_axes, upp_axes)
+   V_max <- ifelse(ref_point > 0, upp_axes, low_axes)
 
    #---------------------------------------
    # y axis Scaling
@@ -167,11 +228,17 @@ SABCplot <- function(
 
    cc_p_val_zte <- ifelse((1 - p_val_zte) < (1 - exp(7 * log(0.5))), 1 - p_val_zte, 1 - exp(7 * log(0.5)))
    cc_p_val_ate <- ifelse((1 - p_val_ate) < (1 - exp(7 * log(0.5))), 1 - p_val_ate, 1 - exp(7 * log(0.5)))
-   cc_p_val_mte <- ifelse((1 - p_val_mte) < (1 - exp(7 * log(0.5))), 1 - p_val_mte, 1 - exp(7 * log(0.5)))
+   if (!is.null(mte)) {
+     cc_p_val_mte <- ifelse((1 - p_val_mte) < (1 - exp(7 * log(0.5))), 1 - p_val_mte, 1 - exp(7 * log(0.5)))
+   } else {
+     cc_p_val_mte <- numeric(0)
+   }
+
    cc_defalut_scale <- c(CC_cal, cc_p_val_zte, cc_p_val_ate, cc_p_val_mte)
+
    cc_s_val_int <- 1 - exp(s_val_int * log(0.5))
 
-   cc_scale <-sort(unique(c(conf_levels, cc_defalut_scale, cc_s_val_int)))
+   cc_scale <- sort(unique(c(conf_levels, cc_defalut_scale, cc_s_val_int)))
 
    scale_master <- data.frame(ci_break = cc_scale)
    scale_master$s_break <- round(log(1 - scale_master$ci_break)/log(0.5), 2)
@@ -179,10 +246,10 @@ SABCplot <- function(
    ci_to_show <- c(0, 0.5, 0.95, 0.99, conf_levels)
    s_to_show_int <- 0:7
 
-   s_val_zte_cut <- ifelse(s_val_zte < 7, s_val_zte, 7)
-   s_val_ate_cut <- ifelse(s_val_ate < 7, s_val_ate, 7)
-   s_val_mte_cut <- ifelse(s_val_mte < 7, s_val_mte, 7)
-   s_to_show_hyp <- c(s_val_zte_cut, s_val_ate_cut, s_val_mte_cut)
+   s_to_show_hyp <- c(s_val_zte_cut, s_val_ate_cut)
+   if (!is.null(s_val_mte_cut)) {
+     s_to_show_hyp <- c(s_to_show_hyp, s_val_mte_cut)
+   }
 
    scale_master$ci_label <- ifelse(scale_master$ci_break %in% ci_to_show,
                                    as.character(round(scale_master$ci_break, 3)), "")
@@ -199,14 +266,16 @@ SABCplot <- function(
  # Dataset in drawing the ABC plot
  #---------------------------------------
 
-  library(ggplot2)
-
   k <- length(estimate)
   id <- k:1
 
   df1 <- data.frame(y = Inf, x = zte, group = "0")
   df2 <- data.frame(y = Inf, x = ate, group = "1")
-  df3 <- data.frame(y = Inf, x = mte, group = "2")
+  if (!is.null(mte)) {
+    df3 <- data.frame(y = Inf, x = mte, group = "2")
+  } else {
+    df3 <- NULL
+  }
 
   d_name <- paste(effect_measure)
   ci_name <- "confidence coefficient"
@@ -223,12 +292,12 @@ SABCplot <- function(
                        , stderr = stderr
                        , zte = zte
                        , ate = ate
-                       , mte = mte
+                       , mte = if(is.null(mte)) NA else mte
                        , log_BF = log_BF
                        , p_val_zte = p_val_zte
                        , s_val_zte_cut = s_val_zte_cut
                        , s_val_ate_cut = s_val_ate_cut
-                       , s_val_mte_cut = s_val_mte_cut
+                       , s_val_mte_cut = if(is.null(s_val_mte_cut)) NA else s_val_mte_cut
                        , y = id
                        , xmin = xmin
                        , xmax = xmax
@@ -236,47 +305,48 @@ SABCplot <- function(
                        , V_max = V_max
                        , length_axes = length_axes)
 
-S_ABCplot <-
-  ggplot(data = Result, aes(y = y))+
-   geom_line(data = CC_list, aes(y = s_level, x = lower), linewidth = 1.1, color = "dodgerblue2")+
-   geom_line(data = CC_list, aes(y = s_level, x = upper), linewidth = 1.1, color = "dodgerblue2")+
-   geom_vline(aes(xintercept = estimate), color = "dodgerblue2", linetype = "dashed", linewidth = 1.1)+
-   geom_vline(data = df1, aes(xintercept = x, color = group), linewidth = 1.5)+
-   geom_vline(data = df2, aes(xintercept = x, color = group), linewidth = 1.5)+
-  {if(switch_BF_com)geom_vline(data = df3, aes(xintercept = x, color = group), linewidth = 1.2)}+
-  {if(switch_BF_sim)scale_color_manual(name="reference line", labels = zate_nm, values=c("red", "springgreen4"))}+
-  {if(switch_BF_com)scale_color_manual(name="reference line", labels = zamte_nm, values=c("red", "springgreen4", "mediumorchid3"))}+
-  geom_errorbar(data = CI_results, mapping = aes(x = estimate, y = s_levels, xmin = lower, xmax = upper), width = 0.2, linewidth = 1.1)+
-  geom_segment(aes(x = zte, xend = xmax, y = s_val_zte_cut, yend = s_val_zte_cut), color = "grey38", linetype = "dotted", linewidth = 1)+
-  geom_segment(aes(x = ate, xend = xmax, y = s_val_ate_cut, yend = s_val_ate_cut), color = "grey38", linetype = "dotted", linewidth = 1)+
-  geom_segment(aes(x = mte, xend = xmax, y = s_val_mte_cut, yend = s_val_mte_cut), color = "grey38", linetype = "dotted", linewidth = 1)+
-  scale_x_continuous(limits = c(xmin, xmax), breaks = seq(xmin, xmax, by = length_axes),
-                    sec.axis = dup_axis(breaks = BF_list$est_list, labels = BF_list$logBFval, name = lnBF_name), expand = c(0, 0.001))+
-  scale_y_reverse(breaks = s_scale_break, labels = ci_scale_label,
-                  sec.axis = dup_axis(breaks = s_scale_break, labels = s_scale_label, name = s_name), expand = c(0.0005, 0))+
-  labs(x = d_name, y = ci_name)+
-  theme(
-    panel.background = element_rect(fill = "transparent",color = NA),
-    panel.grid.minor = element_line(color = NA),
-    panel.grid.major = element_line(color = NA),
-    plot.background = element_rect(fill = "transparent",color = NA) ,
+S_ABCplot <- ggplot2::ggplot(data = Result, mapping = ggplot2::aes(y = y))+
+  ggplot2::geom_line(data = CC_list, ggplot2::aes(y = s_level, x = lower), linewidth = 1.1, color = "dodgerblue2")+
+  ggplot2::geom_line(data = CC_list, ggplot2::aes(y = s_level, x = upper), linewidth = 1.1, color = "dodgerblue2")+
+  ggplot2::geom_vline(ggplot2::aes(xintercept = estimate), color = "dodgerblue2", linetype = "dashed", linewidth = 1.1)+
+  ggplot2::geom_vline(data = df1, ggplot2::aes(xintercept = x, color = group), linewidth = 1.5)+
+  ggplot2:: geom_vline(data = df2, ggplot2::aes(xintercept = x, color = group), linewidth = 1.5)+
+  {if(!is.null(mte))ggplot2::geom_vline(data = df3, ggplot2::aes(xintercept = x, color = group), linewidth = 1.2)}+
+  ggplot2::scale_color_manual(name = "reference line",
+     labels = if(!is.null(mte)) zamte_nm else zate_nm,
+     values = if(!is.null(mte)) c("red", "springgreen4", "mediumorchid3") else c("red", "springgreen4")) +
+  ggplot2::geom_errorbar(data = CI_results, ggplot2::aes(x = estimate, y = s_levels, xmin = lower, xmax = upper), width = 0.2, linewidth = 1.1)+
+  ggplot2::geom_segment(ggplot2::aes(x = zte, xend = xmax, y = s_val_zte_cut, yend = s_val_zte_cut), color = "grey38", linetype = "dotted", linewidth = 1)+
+  ggplot2::geom_segment(ggplot2::aes(x = ate, xend = xmax, y = s_val_ate_cut, yend = s_val_ate_cut), color = "grey38", linetype = "dotted", linewidth = 1)+
+  {if(!is.null(mte))ggplot2::geom_segment(ggplot2::aes(x = mte, xend = xmax, y = s_val_mte_cut, yend = s_val_mte_cut), color = "grey38", linetype = "dotted", linewidth = 1)}+
+  ggplot2::scale_x_continuous(limits = c(xmin, xmax), breaks = seq(xmin, xmax, by = length_axes),
+                    sec.axis = ggplot2::dup_axis(breaks = BF_list$est_list, labels = BF_list$logBFval, name = lnBF_name), expand = c(0, 0.001))+
+  ggplot2::scale_y_reverse(breaks = s_scale_break, labels = ci_scale_label,
+                  sec.axis = ggplot2::dup_axis(breaks = s_scale_break, labels = s_scale_label, name = s_name), expand = c(0.0005, 0))+
+  ggplot2::labs(x = d_name, y = ci_name)+
+  ggplot2:: theme(
+    panel.background = ggplot2::element_rect(fill = "transparent",color = NA),
+    panel.grid.minor = ggplot2::element_line(color = NA),
+    panel.grid.major = ggplot2::element_line(color = NA),
+    plot.background = ggplot2::element_rect(fill = "transparent",color = NA) ,
     legend.position="bottom",
-    legend.title = element_text(size=14, face="bold"),
-    axis.text.x = element_text(size = 18),
-    axis.text.y = element_text(size = 18),
-    axis.title = element_text(size = 14),
-    axis.ticks = element_line(colour = "white"))+
-  annotate("rect", ymin = -Inf, ymax = Inf, xmin = V0, xmax = V1, alpha = 0.1, fill = "orangered3")+
-  annotate("rect", ymin = -Inf, ymax = Inf, xmin = V1, xmax = V2, alpha = 0.2, fill = "orangered3")+
-  annotate("rect", ymin = -Inf, ymax = Inf, xmin = V2, xmax = V3, alpha = 0.3, fill = "orangered3")+
-  annotate("rect", ymin = -Inf, ymax = Inf, xmin = V3, xmax = V4, alpha = 0.4, fill = "orangered3")+
-  annotate("rect", ymin = -Inf, ymax = Inf, xmin = V4, xmax = V_min, alpha = 0.55, fill = "orangered3")+
-  annotate("rect", ymin = -Inf, ymax = Inf, xmin = V0, xmax = V_1, alpha = 0.1, fill = "seagreen")+
-  annotate("rect", ymin = -Inf, ymax = Inf, xmin = V_1, xmax = V_2, alpha = 0.2, fill = "seagreen")+
-  annotate("rect", ymin = -Inf, ymax = Inf, xmin = V_2, xmax = V_3, alpha = 0.3, fill = "seagreen")+
-  annotate("rect", ymin = -Inf, ymax = Inf, xmin = V_3, xmax = V_4, alpha = 0.4, fill = "seagreen")+
-  annotate("rect", ymin = -Inf, ymax = Inf, xmin = V_4, xmax = V_max, alpha = 0.55, fill = "seagreen")
+    legend.title = ggplot2::element_text(size=14, face="bold"),
+    axis.text.x = ggplot2::element_text(size = 18),
+    axis.text.y = ggplot2::element_text(size = 18),
+    axis.title = ggplot2::element_text(size = 14),
+    axis.ticks = ggplot2::element_line(colour = "white"))+
+  ggplot2::annotate("rect", ymin = -Inf, ymax = Inf, xmin = V0, xmax = V1, alpha = 0.1, fill = "orangered3")+
+  ggplot2::annotate("rect", ymin = -Inf, ymax = Inf, xmin = V1, xmax = V2, alpha = 0.2, fill = "orangered3")+
+  ggplot2::annotate("rect", ymin = -Inf, ymax = Inf, xmin = V2, xmax = V3, alpha = 0.3, fill = "orangered3")+
+  ggplot2::annotate("rect", ymin = -Inf, ymax = Inf, xmin = V3, xmax = V4, alpha = 0.4, fill = "orangered3")+
+  ggplot2::annotate("rect", ymin = -Inf, ymax = Inf, xmin = V4, xmax = V_min, alpha = 0.55, fill = "orangered3")+
+  ggplot2::annotate("rect", ymin = -Inf, ymax = Inf, xmin = V0, xmax = V_1, alpha = 0.1, fill = "seagreen")+
+  ggplot2::annotate("rect", ymin = -Inf, ymax = Inf, xmin = V_1, xmax = V_2, alpha = 0.2, fill = "seagreen")+
+  ggplot2::annotate("rect", ymin = -Inf, ymax = Inf, xmin = V_2, xmax = V_3, alpha = 0.3, fill = "seagreen")+
+  ggplot2::annotate("rect", ymin = -Inf, ymax = Inf, xmin = V_3, xmax = V_4, alpha = 0.4, fill = "seagreen")+
+  ggplot2::annotate("rect", ymin = -Inf, ymax = Inf, xmin = V_4, xmax = V_max, alpha = 0.55, fill = "seagreen")
 
 print(S_ABCplot)
 }
+
 
