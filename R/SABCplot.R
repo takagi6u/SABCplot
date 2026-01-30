@@ -6,7 +6,8 @@
 
 #' @title S-ABCplot
 #' @description \code{SABCplot} The function SABCplot is the function that plots Figures 3 and 4.
-#' @importFrom ggplot2, dplyr
+#' @importFrom ggplot2
+#' @importFrom  dplyr
 #' @param effect_measure String indicating the label of the lower horizontal axis."difference in means", "risk difference", "log risk ratio", "log odds ratio", "log hazard ratio"
 #' @param BF_type String indicating the BF hypotheses setting of plot. "simple", "composite"
 #' @param estimate Numerical vector containing the estimate.
