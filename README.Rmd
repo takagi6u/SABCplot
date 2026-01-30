@@ -61,7 +61,7 @@ SABCplot(effect_measure = "difference in means"
  
 ```
 
-From this information, an S-ABC plot can be drawn. Optionally, you can plot graphs based on both zte and ate hypotheses by changing the BF hypothesis settings. Enter zte and ate, and select "Simple" as the BF_type. You can also increase the confidence interval you want to see. Enter the confidence coefficient you want to see in conf_levels.
+From this information, an S-ABC plot can be drawn. Optionally, you can plot graphs based on both zte and ate hypotheses by changing the BF hypothesis settings. Enter zte and ate, and select "Simple" as the BF_type. You can also increase the confidence interval you want to see. Enter the confidence coefficient you want to see in conf_levels. You can choose effect_measure from effect measures commonly used in clinical trials, such as "difference in means", "risk difference", "log risk ratio", "log odds ratio", and "log hazard ratio".
 
 ```{r example2}
 
