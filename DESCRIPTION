@@ -12,9 +12,9 @@ Authors@R: c(
 Author: Yumi Takagi [cre, aut], Takashi Omori [aut], Hiroshi Yadohisa [aut]
 Description: A comprehensive quantitative graph for assessing researchers' hypotheses. It features specialized tools for evaluating results based on researchers' hypotheses, such as a minimum treatment effect, an assumed treatment effect set at the sample size determination, and a zero hypothesis set in the frequentist hypothesis test that there is no difference in treatment effect between the two groups. Commonly used effect measures, such as difference in means, risk difference, log risk ratio, log odds ratio, and log hazard ratio, are supported. The only information needed for drawing the S-ABC plot is the point estimate, standard error, and the researcher's hypotheses.
 Depends: R (>= 4.5.0)
-Imports:
-	ggplot2 (>= 4.0.0),
-	dplyr (>= 1.1.4)
+Imports: 
+    ggplot2,
+    dplyr
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
