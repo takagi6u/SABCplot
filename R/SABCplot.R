@@ -9,7 +9,7 @@
 #' @importFrom ggplot2, dplyr
 #' @param effect_measure String indicating the label of the lower horizontal axis."difference in means", "risk difference", "log risk ratio", "log odds ratio", "log hazard ratio"
 #' @param BF_type String indicating the BF hypotheses setting of plot. "simple", "composite"
-#' @param estimate Numerical vector containing the estimate(s).
+#' @param estimate Numerical vector containing the estimate.
 #' @param N1 Numerical vector containing the sample size(s). Must be equal the number of estimates.
 #' @param N2 Numerical vector containing the sample size(s). Must be equal the number of estimates.
 #' @param zte Numerical vector containing zero treatment effect. Must be equal null hypothesis of the null hypothesis statistical test.
