@@ -1,0 +1,94 @@
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+# SABCplot
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+The goal of SABCplot is a quantitative statistical graph for evaluating
+the MTE using BFs and S-values while accounting for estimation
+precision. The information required to construct the S-ABC plot consists
+solely those of factors for the point estimate of the effect measure,
+its standard error, and the researcher’s specified hypotheses reported
+within the paper.
+
+## Installation
+
+You can install the development version of SABCplot from
+[GitHub](https://github.com/takagi6u/SABCplot.git) .
+
+``` r
+# install.packages("pak")
+pak::pak("takagi6u/SABCplot")
+
+# Or using remotes
+# install.packages("remotes")
+remotes::install_github("takagi6u/SABCplot")
+```
+
+## Example
+
+This is a basic example which shows you how to solve a common problem.
+Suppose you have a study where the primary endpoint is the difference in
+means between two groups, and you have a point estimate, its standard
+error, sample size (N1 and N2). The hypotheses you want to know are a
+minimum treatment effect (mte) of 8, an assumed treatment effect using a
+sample size calculation (ate) of 58, and a zero treatment effect (zte)
+of 0. If both mte and ate are available, select “composite” for BF_type.
+
+``` r
+library(SABCplot)
+
+estimate <- 16.7
+se <- 6.336172
+N1 <- 95  
+N2 <- 95
+
+SABCplot(effect_measure = "difference in means"
+         , BF_type = "composite"
+         , estimate = estimate
+         , stderr = se
+         , N1 = N1
+         , N2 = N2
+         , zte = 0
+         , ate = 58
+         , mte = 8
+         , conf_levels = c(0.95)
+         , low_axes = -10
+         , upp_axes = 70
+         , length_axes = 10)
+```
+
+<img src="man/figures/README-example1-1.png" width="100%" />
+
+From this information, an S-ABC plot can be drawn. Optionally, you can
+plot graphs based on both zte and ate hypotheses by changing the BF
+hypothesis settings. Enter zte and ate, and select “Simple” as the
+BF_type. You can also increase the confidence interval you want to see.
+Enter the confidence coefficient you want to see in conf_levels.
+
+``` r
+
+library(SABCplot)
+
+estimate <- 16.7
+se <- 6.336172
+N1 <- 95  
+N2 <- 95
+
+SABCplot(effect_measure = "difference in means"
+         , BF_type = "simple"
+         , estimate = estimate
+         , stderr = se
+         , N1 = N1
+         , N2 = N2
+         , zte = 0
+         , ate = 58
+         , conf_levels = c(0.8, 0.95)
+         , low_axes = -10
+         , upp_axes = 70
+         , length_axes = 10)
+```
+
+<img src="man/figures/README-example2-1.png" width="100%" />
